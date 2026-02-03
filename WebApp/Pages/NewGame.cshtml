@@ -1,0 +1,68 @@
+@page
+@model WebApp.Pages.NewGame
+@{
+    ViewData["Title"] = "New Game";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="form-card">
+            <h2><i class="bi bi-plus-circle me-2 text-primary"></i>Start a New Game</h2>
+            
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <div class="form-group">
+                    <label asp-for="ConfigId" class="form-label">
+                        <i class="bi bi-gear me-1"></i>Game Configuration
+                    </label>
+                    <select asp-for="ConfigId" class="form-select" asp-items="Model.ConfigurationSelectList"></select>
+                    <span asp-validation-for="ConfigId" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="GameName" class="form-label">
+                        <i class="bi bi-tag me-1"></i>Game Name
+                    </label>
+                    <input asp-for="GameName" class="form-control" placeholder="Enter a name for this game" />
+                    <span asp-validation-for="GameName" class="text-danger"></span>
+                </div>
+                
+                
+                <hr class="my-4">
+                
+                <div class="form-group">
+                    <label asp-for="Player1Name" class="form-label">
+                        <span class="player-indicator red">
+                            <span class="dot"></span>
+                            Player 1 (Red)
+                        </span>
+                    </label>
+                    <input asp-for="Player1Name" class="form-control" placeholder="Enter player 1 name" />
+                    <span asp-validation-for="Player1Name" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="Player2Name" class="form-label">
+                        <span class="player-indicator blue">
+                            <span class="dot"></span>
+                            Player 2 (Blue)
+                        </span>
+                    </label>
+                    <input asp-for="Player2Name" class="form-control" placeholder="Enter player 2 name" />
+                    <span asp-validation-for="Player2Name" class="text-danger"></span>
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-play-fill me-1"></i>Start Game
+                    </button>
+                    <a asp-page="./Index" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

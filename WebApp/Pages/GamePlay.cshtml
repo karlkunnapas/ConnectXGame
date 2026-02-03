@@ -1,0 +1,917 @@
+@page
+@using BLL
+@model WebApp.Pages.GamePlay
+@{
+ViewData["Title"] = "Game Play";
+}
+
+<div class="content-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-controller me-2"></i>@Model.GameBrain.GetName()
+        </h2>
+        <div class="d-flex gap-3">
+            <span class="player-indicator red">
+                <span class="dot"></span>
+                @Model.Player1Name
+            </span>
+            <span class="text-muted">vs</span>
+            <span class="player-indicator blue">
+                <span class="dot"></span>
+                @Model.Player2Name
+            </span>
+        </div>
+    </div>
+</div>
+
+@if (!Model.IsConnected)
+{
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Disconnected from game session. Please refresh to reconnect.
+</div>
+}
+
+<!-- Game status display -->
+<div id="gameStatus" class="alert alert-info" style="display: none;">
+    <i class="bi bi-info-circle me-2"></i>
+    <span id="gameStatusText">Waiting for players...</span>
+</div>
+
+<!-- Draw banner (hidden by default) -->
+<div class="draw-banner alert alert-warning" style="display: none; margin-top: 20px;">
+    <div class="d-flex align-items-center">
+        <div class="draw-icon me-3">
+            <i class="bi bi-dash-circle-fill"></i>
+        </div>
+        <div>
+            <h4 class="mb-1">Game Drawn!</h4>
+            <p class="mb-0">The board is full and no player achieved the winning condition.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Winner banner (hidden by default) -->
+<div class="winner-banner" style="display: none;">
+    <div class="winner-icon"><i class="bi bi-trophy-fill"></i></div>
+    <h2>
+        <span id="winner-name">Player Name</span> Wins!
+    </h2>
+</div>
+
+<!-- Multiplayer/Singleplayer Toggle -->
+@{
+bool isAiGame = Model.GameBrain.GetPlayer1Type() == EPlayerType.Ai || Model.GameBrain.GetPlayer2Type() == EPlayerType.Ai;
+}
+
+@if (!isAiGame)
+{
+<div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+    <label class="form-label mb-0 fw-bold">Game Mode:</label>
+    <div class="btn-group" role="group" aria-label="Game mode toggle">
+        <input type="radio" class="btn-check" name="gameMode" id="multiplayerMode" autocomplete="off" checked>
+        <label class="btn btn-outline-primary" for="multiplayerMode">
+            <i class="bi bi-people me-2"></i>Multiplayer
+        </label>
+
+        <input type="radio" class="btn-check" name="gameMode" id="singleplayerMode" autocomplete="off">
+        <label class="btn btn-outline-secondary" for="singleplayerMode">
+            <i class="bi bi-person me-2"></i>Singleplayer
+        </label>
+    </div>
+    <div class="form-text ms-2">Switch between multiplayer (SignalR) and singleplayer modes</div>
+</div>
+}
+
+<div class="text-center mb-3">
+    <div class="player-turn @(Model.isNextMoveByX ? "red" : "blue")">
+        <span class="turn-indicator"></span>
+        <span>@(Model.isNextMoveByX ? Model.Player1Name : Model.Player2Name)'s Turn</span>
+    </div>
+</div>
+
+<div class="text-center">
+    <div class="game-board-container @(Model.GameBrain.IsCylindrical() ? "cylindrical" : "")">
+        <table class="game-board">
+            <tr>
+                <td class="row-header"></td>
+                @for (int x = 0; x < Model.GameBrain.GetBoard().GetLength(0); x++)
+                {
+                <td class="column-header">@(x + 1)</td>
+                }
+                @if (Model.GameBrain.IsCylindrical())
+                {
+                <td class="cylindrical-separator">
+                    <div class="cylindrical-arrow">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                </td>
+                @for (int x = 0; x < Model.GameBrain.GetBoard().GetLength(0); x++)
+                {
+                <td class="column-header">@(x + 1)</td>
+                }
+                }
+            </tr>
+            @for (int y = 0; y < Model.GameBrain.GetBoard().GetLength(1); y++)
+            {
+            <tr>
+                <td class="row-header">@(y + 1)</td>
+                @for (int x = 0; x < Model.GameBrain.GetBoard().GetLength(0); x++)
+                {
+                var cellState = Model.GameBrain.GetBoard()[x, y];
+                var cellClass = GetCellClass(cellState);
+                if (Model.Winner == ECellState.Empty && Model.CanMakeMove)
+                {
+                <td class="clickable-cell" onclick="makeMove(@x)">
+                    <div class="cell @cellClass"></div>
+                </td>
+                }
+                else
+                {
+                <td>
+                    <div class="cell @cellClass"></div>
+                </td>
+                }
+                }
+
+                @if (Model.GameBrain.IsCylindrical())
+                {
+                <td class="cylindrical-separator">
+                    <div class="cylindrical-arrow">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                </td>
+                @for (int x = 0; x < Model.GameBrain.GetBoard().GetLength(0); x++)
+                {
+                var cellState = Model.GameBrain.GetBoard()[x, y];
+                var cellClass = GetCellClass(cellState);
+                if (Model.Winner == ECellState.Empty && Model.CanMakeMove)
+                {
+                <td class="cylindrical-cell" onclick="return false;">
+                    <div class="cell @cellClass cylindrical-visual"></div>
+                </td>
+                }
+                else
+                {
+                <td class="cylindrical-cell">
+                    <div class="cell @cellClass cylindrical-visual"></div>
+                </td>
+                }
+                }
+                }
+            </tr>
+            }
+        </table>
+    </div>
+</div>
+
+<div class="d-flex justify-content-center gap-2 mt-4">
+    @if (Model.Winner != ECellState.Empty)
+    {
+    <a asp-page="./NewGame" class="btn btn-success">
+        <i class="bi bi-plus-lg me-1"></i>New Game
+    </a>
+    }
+    <a asp-page="./SavedGames" class="btn btn-secondary">
+        <i class="bi bi-list me-1"></i>All Games
+    </a>
+    <a asp-page="./Index" class="btn btn-outline-secondary">
+        <i class="bi bi-house me-1"></i>Home
+    </a>
+</div>
+
+<!-- AI Mode Detection and Visual Indicator -->
+@if (Model.GameBrain.GetPlayer1Type() == EPlayerType.Ai || Model.GameBrain.GetPlayer2Type() == EPlayerType.Ai)
+{
+string aiModeText = "";
+string aiModeClass = "";
+
+if (Model.GameBrain.GetPlayer1Type() == EPlayerType.Ai && Model.GameBrain.GetPlayer2Type() == EPlayerType.Ai)
+{
+aiModeText = "AI vs AI: Watch the computers battle it out!";
+aiModeClass = "ai-mode-both";
+}
+else if (Model.GameBrain.GetPlayer1Type() == EPlayerType.Ai)
+{
+aiModeText = "The computer (Player 1) is starting the game";
+aiModeClass = "ai-mode-player1";
+}
+else
+{
+aiModeText = "You are playing against the computer (Player 2)";
+aiModeClass = "ai-mode-player2";
+}
+
+<div class="ai-mode-banner alert alert-info d-flex align-items-center">
+    <i class="bi bi-robot me-2"></i>
+    <strong>AI Mode:</strong> @aiModeText
+</div>
+
+<script>
+    // Set AI mode flags for frontend
+    window.isAiGame = true;
+    document.body.classList.add('@aiModeClass');
+
+    @if (Model.GameBrain.GetPlayer1Type() == EPlayerType.Ai)
+    {
+    <text>window.isPlayer1Ai = true;</text>
+    }
+    @if (Model.GameBrain.GetPlayer2Type() == EPlayerType.Ai)
+    {
+    <text>window.isPlayer2Ai = true;</text>
+    }
+</script>
+}
+
+@if (!isAiGame)
+{
+<!-- Game link sharing -->
+<div class="mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-share me-2"></i>Share Game</h5>
+            <p class="card-text">Copy this link to share the game with another player:</p>
+            <div class="input-group">
+                <input type="text" class="form-control" id="gameLink"
+                       value="@($"{Url.PageLink("/GamePlay")}?id={Model.GameId}&player=2")"
+                       readonly>
+                <button class="btn btn-outline-primary" type="button" onclick="copyGameLink()">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+            </div>
+            <small class="text-muted">Both players should open this link to play together</small>
+        </div>
+    </div>
+</div>
+}
+
+<style>
+    /* Cylindrical visual cells styling */
+    .cylindrical-visual {
+        opacity: 0.7;
+        pointer-events: none;
+        cursor: default;
+        background-color: rgba(200, 200, 200, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Ensure cylindrical cells don't inherit clickable styles */
+    .cylindrical-cell {
+        pointer-events: none;
+    }
+    
+    /* Override any hover effects for cylindrical cells */
+    .cylindrical-visual:hover {
+        transform: none !important;
+        cursor: default !important;
+        box-shadow: none !important;
+    }
+</style>
+
+<!-- SignalR Client Script -->
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    // Global variables
+    let connection = null;
+    let gameId = '@Model.GameId';
+    let currentPlayer = '@Model.CurrentPlayer';
+    let player1Name = '@Model.Player1Name';
+    let player2Name = '@Model.Player2Name';
+    let isConnected = false;
+    let isMultiplayerMode = true; // Default to multiplayer mode
+
+    // Initialize SignalR
+    function initializeSignalR() {
+        // Check if SignalR is available
+        if (typeof signalR === 'undefined') {
+            console.error('SignalR not loaded. Attempting to load from CDN...');
+            loadSignalRFromCDN();
+            return;
+        }
+
+        try {
+            // Create connection
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/GameHub")
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            // Set up event handlers AFTER connection is created
+            setupEventHandlers();
+
+            // Start connection
+            startConnection();
+        } catch (err) {
+            console.error('SignalR initialization error:', err);
+        }
+    }
+
+    // Load SignalR from CDN as fallback
+    function loadSignalRFromCDN() {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js';
+        script.onload = function() {
+            console.log('SignalR loaded from CDN');
+            initializeSignalR();
+        };
+        script.onerror = function() {
+            console.error('Failed to load SignalR from CDN');
+            updateGameStatus('Failed to load SignalR library. Multiplayer features unavailable.');
+        };
+        document.head.appendChild(script);
+    }
+
+    // Set up SignalR event handlers
+    function setupEventHandlers() {
+        if (!connection) {
+            console.error('Connection is null in setupEventHandlers');
+            return;
+        }
+
+        // Handle incoming moves
+        connection.on("ReceiveMove", function(x, y, player) {
+            console.log("Move received: ", x, y, player);
+            // Update the board for all players, including the player who made the move
+            updateBoard(x, y, player);
+        });
+
+        // Handle invalid moves
+        connection.on("InvalidMove", function(message) {
+            console.log("Invalid move:", message);
+            updateGameStatus(message);
+        });
+
+        // Handle AI moves
+        connection.on("ReceiveAiMove", function(x, y, player) {
+            console.log("AI Move received: ", x, y, player);
+            // Update the board for all players when AI makes a move
+            updateBoard(x, y, player);
+            enableClicks();
+        });
+
+        // Handle player joining
+        connection.on("GameJoined", function(player) {
+            console.log("Player joined: ", player);
+            updateGameStatus(`${player} joined the game!`);
+
+            // After joining, check turn status - but only if this isn't the player who just joined
+            // (to avoid confusion with the TurnChanged event that will be sent separately)
+            // The TurnChanged event will handle the proper turn assignment
+        });
+
+        // Handle player leaving
+        connection.on("GameLeft", function(player) {
+            console.log("Player left: ", player);
+            updateGameStatus(`${player} left the game.`);
+        });
+
+        // Handle game errors
+        connection.on("GameError", function(error) {
+            console.error("Game error: ", error);
+            updateGameStatus(`Error: ${error}`);
+        });
+
+        // Handle game status updates
+        connection.on("GameStatus", function(status) {
+            console.log("Game status: ", status);
+            updateGameStatus(status);
+        });
+
+        // Handle turn changes
+        connection.on("TurnChanged", function(nextPlayer) {
+            console.log("Turn changed to player: ", nextPlayer);
+            console.log("Currentplayer: ", @Model.CurrentPlayer);
+            console.log(nextPlayer === currentPlayer);
+            
+            // Update the turn indicator
+            const turnIndicator = document.querySelector('.player-turn');
+            if (turnIndicator) {
+                if (nextPlayer === "1") {
+                    turnIndicator.className = 'player-turn red';
+                    turnIndicator.innerHTML = '<span class="turn-indicator"></span><span>@Model.Player1Name\'s Turn</span>';
+                } else {
+                    turnIndicator.className = 'player-turn blue';
+                    turnIndicator.innerHTML = '<span class="turn-indicator"></span><span>@Model.Player2Name\'s Turn</span>';
+                }
+            }
+
+            // Update click state based on whose turn it is and game type
+            if (isAiVsAiGame()) {
+                // AI vs AI games - never allow clicks
+                disableClicks();
+                updateGameStatus("AI vs AI game - watching...");
+                setTimeout(() => {
+                    updateGameStatus("AI is thinking...");
+                    // Trigger AI move via SignalR
+                    connection.invoke("MakeAiMove", gameId, -1, nextPlayer)
+                        .catch(err => console.error("AI move failed: ", err));
+                }, 1000);
+            } else if (isSinglePlayerAiGame()) {
+                // Single-player AI vs Human games
+                // Always allow human player to make moves, regardless of turn
+                
+                // If it's AI's turn, trigger AI move
+                if (isAiTurn()) {
+                    console.log("AI kutsumine")
+                    disableClicks();
+                    setTimeout(() => {
+                        updateGameStatus("AI is thinking...");
+                        // Trigger AI move via SignalR
+                        const aiPlayer = isPlayer1Ai() ? "1" : "2";
+                        connection.invoke("MakeAiMove", gameId, -1, aiPlayer)
+                            .catch(err => console.error("AI move failed: ", err));
+                    }, 1000);
+                } else {
+                    updateGameStatus("Your turn!");
+                }
+            } else {
+                // Multiplayer human vs human games
+                if (nextPlayer === currentPlayer) {
+                    enableClicks();
+                    updateGameStatus("Your turn!");
+                } else {
+                    disableClicks();
+                }
+            }
+        });
+
+        // Handle game over
+        connection.on("GameOver", function(winnerPlayer) {
+            console.log("Game over! Result: ", winnerPlayer);
+            
+            if (winnerPlayer === "D") {
+                // Handle draw
+                // Hide game status banner and show draw banner instead
+                const gameStatus = document.getElementById('gameStatus');
+                if (gameStatus) {
+                    gameStatus.style.display = 'none !important';
+                }
+                
+                // Show draw banner
+                const drawBanner = document.querySelector('.draw-banner');
+                if (drawBanner) {
+                    drawBanner.style.display = 'block';
+                }
+                
+                // Disable all clicks
+                const clickableCells = document.querySelectorAll('.clickable-cell');
+                clickableCells.forEach(cell => {
+                    cell.style.pointerEvents = 'none';
+                    cell.style.opacity = '0.6';
+                });
+            } else {
+                // Handle win
+                const winnerName = winnerPlayer === "1" ? "@Model.Player1Name" : "@Model.Player2Name";
+                
+                // Hide game status banner and show winner banner instead
+                const gameStatus = document.getElementById('gameStatus');
+                if (gameStatus) {
+                    gameStatus.style.display = 'none !important';
+                }
+                
+                // Show winner banner with correct player name
+                const winnerBanner = document.querySelector('.winner-banner');
+                const winnerNameSpan = document.querySelector('#winner-name');
+                if (winnerBanner && winnerNameSpan) {
+                    winnerNameSpan.textContent = winnerName;
+                    winnerBanner.style.display = 'block';
+                }
+                
+                // Disable all clicks
+                const clickableCells = document.querySelectorAll('.clickable-cell');
+                clickableCells.forEach(cell => {
+                    cell.style.pointerEvents = 'none';
+                    cell.style.opacity = '0.6';
+                });
+            }
+        });
+
+        // Handle connection close
+        connection.onclose = function (error) {
+            console.log("Connection closed:", error);
+            isConnected = false;
+            updateGameStatus("Connection lost. Attempting to reconnect...");
+            setTimeout(() => {
+                startConnection();
+            }, 5000); // Retry connection after 5 seconds
+        };
+
+        // Handle connection open
+        connection.onopen = function () {
+            console.log("Connection opened");
+            isConnected = true;
+            updateGameStatus("Connected to multiplayer game.");
+        };
+    }
+
+    // Start the SignalR connection
+    async function startConnection() {
+        if (!connection) {
+            console.error('Cannot start connection: connection is null');
+            return;
+        }
+
+        try {
+            await connection.start();
+            console.log("SignalR connected");
+            isConnected = true;
+
+            // Join the game session
+            await connection.invoke("JoinGame", gameId, currentPlayer);
+        } catch (err) {
+            console.error("SignalR connection error:", err);
+            isConnected = false;
+            updateGameStatus('Failed to connect to multiplayer service. Please refresh the page.');
+            // Retry connection after 5 seconds
+            setTimeout(startConnection, 5000);
+        }
+    }
+
+    // Game functions
+    function makeMove(x) {
+        // Check if it's AI's turn in single-player games
+        if (isSinglePlayerAiGame() && isAiTurn()) {
+            // Don't allow human to make move when it's AI's turn
+            alert("It's the AI's turn!");
+            return;
+        }
+
+        // Check if clicks are disabled (for multiplayer games)
+        if (!isMultiplayerMode && isAiVsAiGame()) {
+            alert("AI vs AI game - no human moves allowed");
+            return;
+        }
+
+        // Always use SignalR for moves (even in singleplayer mode)
+        if (!isConnected || !connection) {
+            alert("Not connected to game session");
+            return;
+        }
+
+        // In multiplayer mode, check if it's the current player's turn
+        if (isMultiplayerMode) {
+            const turnIndicator = document.querySelector('.player-turn');
+            if (!turnIndicator) {
+                alert("Game state not ready");
+                return;
+            }
+
+            // Determine whose turn it actually is based on the turn indicator
+            const actualTurnPlayer = turnIndicator.classList.contains('red') ? "1" : "2";
+
+            // Check if it's this player's turn
+            if (actualTurnPlayer !== currentPlayer) {
+                alert("Not your turn");
+                return;
+            }
+        } else {
+            const turnIndicator = document.querySelector('.player-turn');
+            currentPlayer = turnIndicator.classList.contains('red') ? "1" : "2";
+        }
+
+        // Find the lowest empty cell in the column
+        const columnCells = getColumnCells(x);
+        let lowestEmptyCell = null;
+        let y = -1;
+
+        for (let i = columnCells.length - 1; i >= 0; i--) {
+            const cell = columnCells[i];
+            const cellDiv = cell.querySelector('.cell');
+            if (cellDiv && cellDiv.classList.contains('cell-empty')) {
+                lowestEmptyCell = cellDiv;
+                y = i;
+                break;
+            }
+        }
+
+        if (!lowestEmptyCell) {
+            alert("Column is full");
+            return;
+        }
+
+        // Make the move
+        connection.invoke("MakeMove", gameId, x, currentPlayer, isMultiplayerMode)
+            .catch(err => console.error("Move failed: ", err));
+    }
+
+    // Check if it's currently the AI's turn
+    function isAiTurn() {
+        const turnIndicator = document.querySelector('.player-turn');
+        if (!turnIndicator) return false;
+
+        // Check if current player is AI based on turn indicator color
+        // Red = Player 1, Blue = Player 2
+        const isPlayer1Turn = turnIndicator.classList.contains('red');
+
+        // Check if the current player is AI
+        if (isPlayer1Turn) {
+            // Player 1's turn - check if Player 1 is AI
+            return isPlayer1Ai();
+        } else {
+            // Player 2's turn - check if Player 2 is AI
+            return isPlayer2Ai();
+        }
+    }
+
+    // Check if Player 1 is AI
+    function isPlayer1Ai() {
+        return document.body.classList.contains('ai-mode-player1') ||
+            document.body.classList.contains('ai-mode-both');
+    }
+
+    // Check if Player 2 is AI
+    function isPlayer2Ai() {
+        return document.body.classList.contains('ai-mode-player2') ||
+            document.body.classList.contains('ai-mode-both');
+    }
+
+    // Check if it's AI vs AI game
+    function isAiVsAiGame() {
+        return document.body.classList.contains('ai-mode-both');
+    }
+
+    // Check if it's single-player AI vs Human game
+    function isSinglePlayerAiGame() {
+        return !isAiVsAiGame() && (isPlayer1Ai() || isPlayer2Ai());
+    }
+
+
+    // Helper function to get all cells in a column
+    function getColumnCells(columnIndex) {
+        const board = document.querySelector('.game-board');
+        const rows = board.querySelectorAll('tr');
+        const cells = [];
+
+        // Skip header row (index 0)
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const cell = row.querySelectorAll('td')[columnIndex + 1]; // +1 for header cell
+            if (cell) {
+                cells.push(cell);
+            }
+        }
+
+        return cells;
+    }
+
+    // Disable clicking when it's not the current player's turn
+    function disableClicks() {
+        // In multiplayer mode, disable clicks when it's not the current player's turn
+        if (isMultiplayerMode) {
+            const clickableCells = document.querySelectorAll('.clickable-cell');
+            clickableCells.forEach(cell => {
+                cell.style.pointerEvents = 'none';
+                cell.style.opacity = '0.6';
+            });
+        }
+        // In singleplayer mode, clicks are always enabled (handled by enableClicks)
+    }
+
+    // Enable clicking when it's the current player's turn
+    function enableClicks() {
+        // In AI vs AI games, never enable clicks
+        if (isAiVsAiGame()) {
+            disableClicks(); // Keep AI vs AI board non-clickable
+            return;
+        }
+
+        const clickableCells = document.querySelectorAll('.clickable-cell');
+        clickableCells.forEach(cell => {
+            cell.style.pointerEvents = 'auto';
+            cell.style.opacity = '1';
+        });
+    }
+
+    // Helper function to get board width dynamically
+    function getBoardWidth() {
+        const board = document.querySelector('.game-board');
+        if (!board) return 0;
+        
+        const headerRow = board.querySelector('tr');
+        if (!headerRow) return 0;
+        
+        const headerCells = headerRow.querySelectorAll('td');
+        // Count cells until we hit the separator or end
+        let width = 0;
+        for (let i = 1; i < headerCells.length; i++) { // Skip row header
+            if (headerCells[i].classList.contains('cylindrical-separator')) {
+                break;
+            }
+            width++;
+        }
+        return width;
+    }
+
+    // Helper function to update individual cell
+    function updateCell(cell, player) {
+        const cellDiv = cell.querySelector('.cell');
+        if (cellDiv) {
+            // Remove existing classes
+            cellDiv.className = 'cell';
+            
+            // Add new class based on player
+            if (player === "1") {
+                cellDiv.classList.add('cell-red');
+            } else {
+                cellDiv.classList.add('cell-blue');
+            }
+            
+            // Check if this is a cylindrical visual cell and apply styling
+            if (cell.classList.contains('cylindrical-cell')) {
+                cellDiv.classList.add('cylindrical-visual');
+            }
+            
+            // Add animation effect (only for main board cells, not cylindrical visuals)
+            if (!cell.classList.contains('cylindrical-cell')) {
+                cellDiv.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    cellDiv.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+    }
+
+    // Update board visually when a move is received from another player
+    function updateBoard(x, y, player) {
+        try {
+            // Find the cell element and update it
+            const board = document.querySelector('.game-board');
+            if (!board) {
+                console.warn('Board not found');
+                return;
+            }
+
+            // Get the row and column indices
+            const rows = board.querySelectorAll('tr');
+            if (rows.length <= y + 1) {
+                console.warn('Invalid row index:', y);
+                return; // Invalid row
+            }
+
+            const row = rows[y + 1]; // Skip header row
+            const cells = row.querySelectorAll('td');
+            
+            // Calculate positions for both main and cylindrical sections
+            const headerCellOffset = 1; // Skip row header
+            const boardWidth = getBoardWidth();
+            const mainBoardStart = headerCellOffset;
+            const cylindricalSeparatorIndex = mainBoardStart + boardWidth;
+            const cylindricalBoardStart = cylindricalSeparatorIndex + 1;
+            
+            // Update main board cell
+            const mainCellIndex = mainBoardStart + x;
+            if (mainCellIndex < cells.length) {
+                updateCell(cells[mainCellIndex], player);
+            }
+            
+            // Update cylindrical duplicate cell (if cylindrical board exists)
+            if (cylindricalBoardStart + x < cells.length) {
+                const cylindricalCellIndex = cylindricalBoardStart + x;
+                updateCell(cells[cylindricalCellIndex], player);
+            }
+
+            // Update the game state
+            updateGameStatus(player === "1" ? player1Name + " moved" : player2Name + " moved");
+        } catch (error) {
+            console.error('Error updating board:', error);
+        }
+    }
+
+    function updateGameStatus(message) {
+        const statusElement = document.getElementById('gameStatus');
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.style.display = 'block';
+            statusElement.className = 'alert alert-info';
+        }
+    }
+
+    function copyGameLink() {
+        const linkInput = document.getElementById('gameLink');
+        if (linkInput) {
+            linkInput.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Failed to copy game link:', err);
+            }
+
+            // Find the button that was clicked
+            let button = null;
+            if (event && event.target) {
+                button = event.target.closest('button');
+            }
+            if (!button) {
+                button = document.querySelector('.btn-outline-primary');
+            }
+
+            if (button) {
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                button.classList.add('btn-success');
+                button.classList.remove('btn-outline-primary');
+
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            }
+        }
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeSignalR();
+
+        // Set up toggle event listeners
+        setupToggleListeners();
+        
+    });
+
+    // Set up toggle event listeners
+    function setupToggleListeners() {
+        const multiplayerRadio = document.getElementById('multiplayerMode');
+        const singleplayerRadio = document.getElementById('singleplayerMode');
+
+        if (multiplayerRadio && singleplayerRadio) {
+            multiplayerRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    switchToMultiplayerMode();
+                }
+            });
+
+            singleplayerRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    switchToSingleplayerMode();
+                }
+            });
+        }
+    }
+
+    // Switch to multiplayer mode
+    function switchToMultiplayerMode() {
+        isMultiplayerMode = true;
+        console.log('Switching to multiplayer mode');
+        updateGameStatus('Switched to multiplayer mode (SignalR enabled)');
+
+        // Re-enable SignalR if it was disabled
+        initializeSignalR();
+
+        // Update UI styling
+        const multiplayerLabel = document.querySelector('label[for="multiplayerMode"]');
+        const singleplayerLabel = document.querySelector('label[for="singleplayerMode"]');
+        if (multiplayerLabel && singleplayerLabel) {
+            multiplayerLabel.classList.remove('btn-outline-secondary');
+            multiplayerLabel.classList.add('btn-primary');
+            singleplayerLabel.classList.remove('btn-primary');
+            singleplayerLabel.classList.add('btn-outline-secondary');
+        }
+    }
+
+    // Switch to singleplayer mode
+    function switchToSingleplayerMode() {
+        isMultiplayerMode = false;
+        console.log('Switching to singleplayer mode');
+        updateGameStatus('Switched to singleplayer mode (SignalR disabled)');
+
+        // Update UI styling
+        const multiplayerLabel = document.querySelector('label[for="multiplayerMode"]');
+        const singleplayerLabel = document.querySelector('label[for="singleplayerMode"]');
+        if (multiplayerLabel && singleplayerLabel) {
+            multiplayerLabel.classList.remove('btn-primary');
+            multiplayerLabel.classList.add('btn-outline-secondary');
+            singleplayerLabel.classList.remove('btn-outline-secondary');
+            singleplayerLabel.classList.add('btn-primary');
+        }
+
+        // In singleplayer mode, always enable clicks for both players
+        enableClicks();
+    }
+
+    // Handle page unload
+    window.addEventListener('beforeunload', function() {
+        if (connection && connection.state === signalR.ConnectionState.Connected) {
+            connection.invoke("LeaveGame", gameId, currentPlayer)
+                .catch(function (err) {
+                    console.error('Error leaving game:', err);
+                });
+        }
+    });
+</script>
+
+
+@functions
+{
+private static string GetCellClass(ECellState cellValue) =>
+cellValue switch
+{
+ECellState.Empty => "cell-empty",
+ECellState.Red => "cell-red",
+ECellState.Blue => "cell-blue",
+ECellState.RedWin => "cell-red-win",
+ECellState.BlueWin => "cell-blue-win",
+_ => "cell-empty"
+};
+}

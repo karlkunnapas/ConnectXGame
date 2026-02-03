@@ -1,0 +1,110 @@
+@page
+@using BLL
+@model WebApp.Pages.EditConfiguration
+@{
+    ViewData["Title"] = "Edit Configuration";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="form-card">
+            <h2>
+                @if (Model.Editing)
+                {
+                    <i class="bi bi-pencil me-2 text-primary">Edit Configuration</i>
+                }
+                else
+                {
+                    <i class="bi bi-plus-lg me-2 text-success">Add Configuration</i>
+                }
+            </h2>
+            
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                
+                <div class="form-group">
+                    <label asp-for="ConfName" class="form-label">
+                        <i class="bi bi-tag me-1"></i>Name
+                    </label>
+                    <input asp-for="ConfName" class="form-control" placeholder="@WebApp.Pages.EditConfiguration.DefaultName" />
+                    <span asp-validation-for="ConfName" class="text-danger"></span>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ConfHeight" class="form-label">
+                                <i class="bi bi-arrows-expand me-1"></i>Board Height (max 20)
+                            </label>
+                            <input asp-for="ConfHeight" class="form-control" placeholder="@WebApp.Pages.EditConfiguration.DefaultBoardHeight" />
+                            <span asp-validation-for="ConfHeight" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ConfWidth" class="form-label">
+                                <i class="bi bi-arrows-collapse me-1"></i>Board Width (max 20)
+                            </label>
+                            <input asp-for="ConfWidth" class="form-control" placeholder="@WebApp.Pages.EditConfiguration.DefaultBoardWidth" />
+                            <span asp-validation-for="ConfWidth" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="ConfWin" class="form-label">
+                        <i class="bi bi-flag me-1"></i>Win Condition
+                    </label>
+                    <input asp-for="ConfWin" class="form-control" placeholder="@WebApp.Pages.EditConfiguration.DefaultWinCondition" />
+                    <span asp-validation-for="ConfWin" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group form-check">
+                    <input asp-for="ConfCylindrical" type="checkbox" class="form-check-input" />
+                    <label asp-for="ConfCylindrical" class="form-check-label">
+                        <i class="bi bi-loop me-1"></i>Is the board cylindrical?
+                    </label>
+                    <span asp-validation-for="ConfCylindrical" class="text-danger"></span>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ConfP1Type" class="form-label">
+                                <span class="player-indicator red">
+                                    <span class="dot"></span>
+                                    Player 1 Type
+                                </span>
+                            </label>
+                            <select asp-for="ConfP1Type" asp-items="Html.GetEnumSelectList<EPlayerType>()" class="form-select"></select>
+                            <span asp-validation-for="ConfP1Type" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="ConfP2Type" class="form-label">
+                                <span class="player-indicator blue">
+                                    <span class="dot"></span>
+                                    Player 2 Type
+                                </span>
+                            </label>
+                            <select asp-for="ConfP2Type" asp-items="Html.GetEnumSelectList<EPlayerType>()" class="form-select"></select>
+                            <span asp-validation-for="ConfP2Type" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <input type="hidden" asp-for="ConfId" />
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save me-1"></i>Save Configuration
+                    </button>
+                    <a asp-page="./Configurations" class="btn btn-secondary">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

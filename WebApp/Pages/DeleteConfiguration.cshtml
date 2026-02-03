@@ -1,0 +1,76 @@
+@page
+@model WebApp.Pages.DeleteConfiguration
+@{
+    ViewData["Title"] = "Delete Configuration";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="delete-card">
+            <div class="text-center mb-4">
+                <div class="warning-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <h2><i class="bi bi-trash me-2"></i>Delete Configuration</h2>
+                <p class="text-muted">Are you sure you want to delete this configuration?</p>
+            </div>
+            
+            <div class="mb-4">
+                <h4>Configuration Details</h4>
+                <hr />
+                <dl class="row">
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.Name)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.Name)
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.BoardWidth)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.BoardWidth)
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.BoardHeight)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.BoardHeight)
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.WinCondition)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.WinCondition)
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.IsCylindrical)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.IsCylindrical)
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.P1Type)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.P1Type)
+                    </dd>
+                    <dt class="col-sm-4">
+                        @Html.DisplayNameFor(model => model.Configuration.P2Type)
+                    </dt>
+                    <dd class="col-sm-8">
+                        @Html.DisplayFor(model => model.Configuration.P2Type)
+                    </dd>
+                </dl>
+            </div>
+            
+            <form method="post">
+                <input type="hidden" asp-for="Configuration.Id" />
+                <div class="d-flex gap-2">
+                    <input type="submit" value="Delete" class="btn btn-danger" />
+                    <a asp-page="./Configurations" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

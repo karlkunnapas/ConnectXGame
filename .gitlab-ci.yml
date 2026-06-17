@@ -5,6 +5,8 @@ deploy:
   stage: deploy
   only:
     - main
+  tags:
+    - shared
   script:
     - docker --version
     - docker compose version

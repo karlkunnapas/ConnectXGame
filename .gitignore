@@ -1,0 +1,34 @@
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+
+# IDE / editor files
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.rsuser
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# .NET / local tooling
+.dotnet/
+.Microsoft.DotNet.ImageBuilder/
+
+# Local logs and generated databases
+*.log
+app.db
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal

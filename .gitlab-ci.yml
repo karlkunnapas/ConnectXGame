@@ -1,0 +1,14 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  only:
+    - main
+  script:
+    - docker --version
+    - docker compose version
+    - test -f docker-compose.yml
+    - test -f Dockerfile
+    - docker compose -f docker-compose.yml config
+    - docker compose -f docker-compose.yml -p connectx up --build --remove-orphans --detach || (docker compose -f docker-compose.yml -p connectx logs --tail=200 web && false)

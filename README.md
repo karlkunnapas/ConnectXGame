@@ -1,5 +1,9 @@
 # ConnectX (C# / .NET 9, ASP.NET Core Razor Pages, EF Core + SQLite)
 
+## Live Demo
+
+- **Deployed web app:** https://kunnap-connectxgame.proxy.itcollege.ee/
+
 ## Description
 
 ConnectX is a customizable Connect Four implementation with two frontends:

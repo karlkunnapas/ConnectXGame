@@ -1,0 +1,25 @@
+name: connectx
+
+services:
+  web:
+    container_name: connectx-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Data Source=<db_file>;Cache=Shared"
+    volumes:
+      - connectx-data:/root/ConnectX
+    networks:
+      - default
+      - edge
+
+volumes:
+  connectx-data:
+
+networks:
+  edge:
+    external: true
